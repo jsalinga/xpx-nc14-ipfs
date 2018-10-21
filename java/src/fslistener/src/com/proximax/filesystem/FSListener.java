@@ -122,7 +122,7 @@ public class FSListener {
 
     private void reg(Path dir, Map<WatchKey, Path> keys, WatchService ws)
             throws IOException {
-        WatchKey key = dir.register(ws, ENTRY_CREATE, ENTRY_DELETE);
+        WatchKey key = dir.register(ws, ENTRY_CREATE);
         keys.put(key, dir);
     }
 
@@ -161,13 +161,17 @@ public class FSListener {
                                 final Path child = path.resolve(name);
                                 System.out.printf("%s: %s %s%n",
                                         kind.name(), path, child);
-                                SwingUtilities.invokeLater(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        processIPFS(child.toString());
-                                    }
+                                //SwingUtilities.invokeLater(new Runnable() {
+                                //    @Override
+                                //    public void run() {
+                                        try {
+                                            processIPFS(child.toString());
+                                        } catch (SQLException | IOException | UploadException ex) {
+                                            Logger.getLogger(FSListener.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
+                                //    }
 
-                                });
+                                //});
                                 if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
                                     if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
                                         try {
@@ -193,74 +197,69 @@ public class FSListener {
         }
     }
 
-    private void processIPFS(final String filePath) {
+    private void processIPFS(final String filePath) throws SQLException, IOException, UploadException {
         if (filePath.contains(".part") || filePath.contains("_trashbin")
                 || filePath.contains("_versions")) {
             System.out.println("Skipping " + filePath + " for NEM Hashing.");
             return;
         }
-        final SwingWorker w = new SwingWorker() {
-            @Override
-            protected Object doInBackground() throws Exception {
-                loadUserIDs();
-                if (UIDs != null) {
-                    for (int j = 0; j < UIDs.size(); j++) {
-                        String uidPath = (String) UIDs.get(j);
-                        if (uidPath.equals(filePath.substring(0, uidPath.length()))) {
-                            String uid = uidPath.replaceAll(
-                                    File.separator + "files", "");
-                            uid = uid.substring(uid.lastIndexOf(File.separator) + 1);
-                            String fPath = filePath.substring(
-                                    uidPath.length());
-                            fPath = "files" + fPath;
-                            while (true) {
-                                String sqlCmd = "select a.fileid\n"
-                                        + "from oc_filecache a\n"
-                                        + "left join oc_storages b on a.storage = b.numeric_id\n"
-                                        + "where b.id = 'home::" + uid.trim() + "' "
-                                        + " and a.path = '" + fPath + "';";
-                                ResultSet sqlResult = sqlRunner.suQuery(sqlCmd);
-                                if (sqlResult != null) {
-                                    if (sqlResult.next()) {
-                                        int fileid = sqlResult.getInt("fileid");
-                                        String[] hashes = uploadFile(filePath, uid);
-                                        if (hashes != null) {
-                                            sqlCmd = "insert into px_nem_hash"
-                                                    + "(oc_filecache_id, uid, fullpath, nemhash, ipfs) "
-                                                    + "values (" + fileid + ","
-                                                    + "'" + uid.trim() + "', "
-                                                    + "'" + filePath + "',"
-                                                    + "'" + hashes[0] + "',"
-                                                    + "'" + hashes[1] + "');";
+        //final SwingWorker w = new SwingWorker() {
+        //@Override
+        //protected Object doInBackground() throws Exception {
+        loadUserIDs();
+        if (UIDs != null) {
+            for (int j = 0; j < UIDs.size(); j++) {
+                String uidPath = (String) UIDs.get(j);
+                if (uidPath.equals(filePath.substring(0, uidPath.length()))) {
+                    String uid = uidPath.replaceAll(
+                            File.separator + "files", "");
+                    uid = uid.substring(uid.lastIndexOf(File.separator) + 1);
+                    String fPath = filePath.substring(
+                            uidPath.length());
+                    fPath = "files" + fPath;
+                    while (true) {
+                        String sqlCmd = "select a.fileid\n"
+                                + "from oc_filecache a\n"
+                                + "left join oc_storages b on a.storage = b.numeric_id\n"
+                                + "where b.id = 'home::" + uid.trim() + "' "
+                                + " and a.path = '" + fPath + "';";
+                        ResultSet sqlResult = sqlRunner.suQuery(sqlCmd);
+                        if (sqlResult != null) {
+                            if (sqlResult.next()) {
+                                int fileid = sqlResult.getInt("fileid");
+                                String[] hashes = uploadFile(filePath, uid);
+                                if (hashes != null) {
+                                    sqlCmd = "insert into px_nem_hash"
+                                            + "(oc_filecache_id, uid, fullpath, nemhash, ipfs) "
+                                            + "values (" + fileid + ","
+                                            + "'" + uid.trim() + "', "
+                                            + "'" + filePath + "',"
+                                            + "'" + hashes[0] + "',"
+                                            + "'" + hashes[1] + "');";
 
-                                        } else {
-                                            sqlCmd = "insert into px_nem_hash"
-                                                    + "(oc_filecache_id, uid, fullpath) "
-                                                    + "values (" + fileid + ","
-                                                    + "'" + uid.trim() + "', "
-                                                    + "'" + filePath + "');";
+                                } else {
+                                    sqlCmd = "insert into px_nem_hash"
+                                            + "(oc_filecache_id, uid, fullpath) "
+                                            + "values (" + fileid + ","
+                                            + "'" + uid.trim() + "', "
+                                            + "'" + filePath + "');";
 
-                                        }
-                                        sqlWritter.suWrite(sqlCmd);
-                                        break;
-                                    } else {
-                                        System.out.println("waiting for a file caching to complete....");
-                                    }
                                 }
+                                sqlWritter.suWrite(sqlCmd);
+                                break;
+                            } else {
+                                System.out.println("waiting for a file caching to complete....");
                             }
-                            break;
                         }
                     }
+                    break;
                 }
-                return null;
             }
-        };
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                w.execute();
-            }
-        });
+        }
+        //return null;
+        //}
+        //};
+        //w.execute();
 
     }
 
@@ -291,7 +290,7 @@ public class FSListener {
     private String[] uploadFile(String filePath, String uid) throws IOException, UploadException {
         String ipfsHash = null;
         String nemHash = null;
-        System.out.println("Getting public and private keys of account name: " + uid);
+        System.out.println("Getting public and private keys of account name: " + uid.trim());
         String sqlCmd = "select * from px_nem_addresses "
                 + "where userid = '" + uid.trim() + "';";
         String privatekey = null, publickey = null, nemAddress = null;
@@ -301,11 +300,11 @@ public class FSListener {
         if (sqlResult != null) {
             try {
                 if (sqlResult.next()) {
-                    privatekey = sqlResult.getString("privatekey");
-                    publickey = sqlResult.getString("publickey");
-                    nemAddress = sqlResult.getString("nem_address");
+                    privatekey = sqlResult.getString("privatekey").trim();
+                    publickey = sqlResult.getString("publickey").trim();
+                    nemAddress = sqlResult.getString("nem_address").trim();
                 } else {
-                    System.out.println("Getting public and private keys of account name: " + uid + " does not exists!");
+                    System.out.println("Getting public and private keys of account name: " + uid.trim() + " does not exists!");
                     canCreate = false;
                 }
             } catch (SQLException ex) {
@@ -332,21 +331,21 @@ public class FSListener {
             System.out.println("Using NEM Address: " + nemAddress + " of \"" + uid + "\"");
             System.out.println("Using Private Key: " + privatekey + " for account \"" + uid + "\"");
             System.out.println("Using Public Key: " + publickey + " for account \"" + uid + "\"");
-            //if (send100XPX(peerConnection, nemAddress, publickey, privatekey)) {
-            UploadFileParameter parameter = UploadFileParameter.create()
-                    .senderPrivateKey(privatekey)
-                    .receiverPublicKey(publickey)
-                    .file(file)
-                    //.securedWithNemKeysPrivacyStrategy()
-                    .build();
-            UploadResult result = upload.uploadFile(parameter);
-            ipfsHash = result.getIpfsHash();
-            nemHash = result.getNemHash();
-            System.out.println("IPFS Hash: " + ipfsHash);
-            System.out.println("NEM Hash: " + nemHash);
-            //} else {
-            //    System.out.println("Failed to send 100 XPX into " + publickey);
-            //}
+            if (send100XPX(peerConnection, nemAddress, publickey, privatekey)) {
+                UploadFileParameter parameter = UploadFileParameter.create()
+                        .senderPrivateKey(privatekey)
+                        .receiverPublicKey(publickey)
+                        .file(file)
+                        .securedWithNemKeysPrivacyStrategy()
+                        .build();
+                UploadResult result = upload.uploadFile(parameter);
+                ipfsHash = result.getIpfsHash();
+                nemHash = result.getNemHash();
+                System.out.println("IPFS Hash: " + ipfsHash);
+                System.out.println("NEM Hash: " + nemHash);
+            } else {
+                System.out.println("Failed to send 100 XPX into " + publickey);
+            }
             fileInputStream.close();
         }
 
@@ -357,7 +356,7 @@ public class FSListener {
         boolean retVal = false;
         try {
             Mosaic xpxMosaic = new Mosaic(new MosaicId(new NamespaceId("prx"), "xpx"),
-                    Quantity.fromValue(1000000));
+                    Quantity.fromValue(100000));
 
             // send 500 XEMs
             final TransferTransaction transferTransaction
@@ -365,7 +364,7 @@ public class FSListener {
                             .sender(new Account(new KeyPair(PrivateKey.fromHexString("deaae199f8e511ec51eb0046cf8d78dc481e20a340d003bbfcc3a66623d09763"))))
                             .recipient(new Account(Address.fromPublicKey(PublicKey.fromHexString(publickey))))
                             .version(2)
-                            .amount(Amount.fromNem(1l))
+                            .amount(Amount.fromNem(100l))
                             .addMosaic(xpxMosaic).buildAndSignTransaction();
 
             // Announce
