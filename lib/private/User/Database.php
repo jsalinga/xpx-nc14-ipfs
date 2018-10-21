@@ -145,7 +145,11 @@ class Database extends ABackend
 
 			// Clear cache
 			unset($this->cache[$uid]);
-
+			$dbname = \OC::$server->getConfig()->getSystemValue("dbname","xnc");
+			$params =  ($uid . ' ' . $dbname);
+			$ncpath = \OC::$SERVERROOT;			
+			$xConfigValue = exec('java -jar ' . $ncpath . '/java/src/makenemaddress/dist/makenemaddress.jar ' . $params);
+			echo $xConfigValue;
 			return $result ? true : false;
 		}
 

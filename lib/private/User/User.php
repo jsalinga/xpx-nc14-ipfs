@@ -455,4 +455,8 @@ class User implements IUser {
 			$this->emitter->emit('\OC\User', 'changeUser', array($this, $feature, $value, $oldValue));
 		}
 	}
+
+	public function getNemAddress() {
+		return $this->config->getUserValue($this->uid, 'settings', 'nem', null);
+	}
 }

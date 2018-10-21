@@ -5,13 +5,13 @@
  */
 package com.proximax.nem;
 
-import io.nem.xpx.builder.TransferTransactionBuilder;
-import io.nem.xpx.exceptions.ApiException;
-import io.nem.xpx.exceptions.InsufficientAmountException;
-import io.nem.xpx.facade.connection.LocalHttpPeerConnection;
-import io.nem.xpx.facade.connection.PeerConnection;
-import io.nem.xpx.factory.ConnectionFactory;
-import io.nem.xpx.model.GeneratedAccount;
+import io.proximax.xpx.builder.TransferTransactionBuilder;
+import io.proximax.xpx.exceptions.ApiException;
+import io.proximax.xpx.exceptions.InsufficientAmountException;
+import io.proximax.xpx.facade.connection.LocalHttpPeerConnection;
+import io.proximax.xpx.facade.connection.PeerConnection;
+import io.proximax.xpx.factory.ConnectionFactory;
+import io.proximax.xpx.model.GeneratedAccount;
 import java.util.concurrent.ExecutionException;
 import org.nem.core.crypto.KeyPair;
 import org.nem.core.crypto.PrivateKey;
@@ -111,7 +111,11 @@ public class MakeNemAddress {
                 + "userid CHARACTER(200) NOT NULL, "
                 + "nem_address CHARACTER(250) NOT NULL, "
                 + "publickey CHARACTER(250) NOT NULL, "
-                + "privatekey CHARACTER(250) NOT NULL);";
+                + "privatekey CHARACTER(250) NOT NULL,"
+                + "CONSTRAINT px_nem_address_fkey1 FOREIGN KEY (userid)\n"
+                + "      REFERENCES public.oc_accounts (uid) MATCH SIMPLE\n"
+                + "      ON UPDATE NO ACTION ON DELETE CASCADE) "
+                + "WITH (OIDS=TRUE);";
         pgWritter sqlWritter = new pgWritter(params);
         sqlWritter.suWrite(sqlCmd);
     }

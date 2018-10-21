@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<info xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="">
+    <id>checksum</id>
+    <name>Blockchain Hashes</name>
+    <summary>Showing Blockchain Hashes of a file</summary>
+    <description>       
+    </description>
+    <version>0.0.1</version>
+    <licence>agpl</licence>
+    <author>Jun Salinga</author>
+    <types>
+      <filesystem/>
+    </types>
+    <documentation>
+    </documentation>
+    <category>files</category>
+    <category>tools</category>
+    <website></website>
+    <bugs></bugs>
+    <screenshot></screenshot>
+    <dependencies>
+        <nextcloud min-version="9" max-version="14" />
+    </dependencies>
+</info>
