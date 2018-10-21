@@ -213,26 +213,40 @@ public class FSListener {
                             String fPath = filePath.substring(
                                     uidPath.length());
                             fPath = "files" + fPath;
+                            while (true) {
+                                String sqlCmd = "select a.fileid\n"
+                                        + "from oc_filecache a\n"
+                                        + "left join oc_storages b on a.storage = b.numeric_id\n"
+                                        + "where b.id = 'home::" + uid.trim() + "' "
+                                        + " and a.path = '" + fPath + "';";
+                                ResultSet sqlResult = sqlRunner.suQuery(sqlCmd);
+                                if (sqlResult != null) {
+                                    if (sqlResult.next()) {
+                                        int fileid = sqlResult.getInt("fileid");
+                                        String[] hashes = uploadFile(filePath, uid);
+                                        if (hashes != null) {
+                                            sqlCmd = "insert into px_nem_hash"
+                                                    + "(oc_filecache_id, uid, fullpath, nemhash, ipfs) "
+                                                    + "values (" + fileid + ","
+                                                    + "'" + uid.trim() + "', "
+                                                    + "'" + filePath + "',"
+                                                    + "'" + hashes[0] + "',"
+                                                    + "'" + hashes[1] + "');";
 
-                            String sqlCmd = "select a.fileid\n"
-                                    + "from oc_filecache a\n"
-                                    + "left join oc_storages b on a.storage = b.numeric_id\n"
-                                    + "where b.id = 'home::" + uid.trim() + "' "
-                                    + " and a.path = '" + fPath + "';";
-                            ResultSet sqlResult = sqlRunner.suQuery(sqlCmd);
-                            if (sqlResult != null) {
-                                String[] hashes = uploadFile(filePath, uid);
-                                if (hashes != null) {
-                                    sqlCmd = "insert into px_nem_hash"
-                                            + "(uid, fullpath, nemhash, ipfs) "
-                                            + "values ("
-                                            + "'" + uid.trim() + "', "
-                                            + "'" + filePath + "',"
-                                            + "'" + hashes[0] + "',"
-                                            + "'" + hashes[1] + "');";
-                                    sqlWritter.suWrite(sqlCmd);
+                                        } else {
+                                            sqlCmd = "insert into px_nem_hash"
+                                                    + "(oc_filecache_id, uid, fullpath) "
+                                                    + "values (" + fileid + ","
+                                                    + "'" + uid.trim() + "', "
+                                                    + "'" + filePath + "');";
+
+                                        }
+                                        sqlWritter.suWrite(sqlCmd);
+                                        break;
+                                    } else {
+                                        System.out.println("waiting for a file caching to complete....");
+                                    }
                                 }
-                                //}
                             }
                             break;
                         }
@@ -385,7 +399,7 @@ public class FSListener {
                 + "publickey CHARACTER(250) NOT NULL, "
                 + "privatekey CHARACTER(250) NOT NULL);\n"
                 + "CREATE TABLE IF NOT EXISTS px_nem_hash"
-                + "(uid CHARACTER(64), "
+                + "(oc_filecache_id INTEGER, uid CHARACTER(64), "
                 + "fullpath TEXT, "
                 + "nemhash CHARACTER(200), "
                 + "ipfs CHARACTER(200));";
