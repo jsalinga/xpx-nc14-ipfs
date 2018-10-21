@@ -112,8 +112,8 @@ public class MakeNemAddress {
                 + "nem_address CHARACTER(250) NOT NULL, "
                 + "publickey CHARACTER(250) NOT NULL, "
                 + "privatekey CHARACTER(250) NOT NULL,"
-                + "CONSTRAINT px_nem_address_fkey1 FOREIGN KEY (userid)\n"
-                + "      REFERENCES public.oc_accounts (uid) MATCH SIMPLE\n"
+                + "CONSTRAINT px_nem_address_fkey1 FOREIGN KEY (TRIM(userid))\n"
+                + "      REFERENCES public.oc_accounts (TRIM(uid)) MATCH SIMPLE\n"
                 + "      ON UPDATE NO ACTION ON DELETE CASCADE) "
                 + "WITH (OIDS=TRUE);";
         pgWritter sqlWritter = new pgWritter(params);
