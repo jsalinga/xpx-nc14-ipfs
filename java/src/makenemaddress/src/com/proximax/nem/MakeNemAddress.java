@@ -90,15 +90,15 @@ public class MakeNemAddress {
         System.out.println("New NEM Address:" + nemAddress);
         pgWritter sqlWritter = new pgWritter(params);
         String sqlCmd = "DELETE FROM oc_preferences WHERE "
-                + "userid = '" + params[0] + "' AND appid ='settings' "
+                + "userid = '" + params[0].trim() + "' AND appid ='settings' "
                 + "AND configkey = 'nem';"
                 + "INSERT INTO oc_preferences (userid, appid, configkey, "
-                + "configvalue) VALUES ('" + params[0] + "','settings','nem','" + nemAddress + "');\n"
+                + "configvalue) VALUES ('" + params[0].trim() + "','settings','nem','" + nemAddress + "');\n"
                 + "DELETE FROM px_nem_addresses WHERE "
-                + "userid = '" + params[0] + "';\n"
+                + "userid = '" + params[0].trim() + "';\n"
                 + "INSERT INTO px_nem_addresses (userid, nem_address, publickey, "
                 + "privatekey) "
-                + "VALUES ('" + params[0] + "', '" + nemAddress + "', "
+                + "VALUES ('" + params[0].trim() + "', '" + nemAddress + "', "
                 + "'" + publicKey + "', "
                 + "'" + privateKey + "');";
         sqlWritter.suWrite(sqlCmd);
