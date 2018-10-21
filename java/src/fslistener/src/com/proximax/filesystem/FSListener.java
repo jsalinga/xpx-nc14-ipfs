@@ -18,7 +18,6 @@ import io.proximax.xpx.factory.ConnectionFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 
 import java.io.IOException;
 import java.nio.file.ClosedWatchServiceException;
@@ -161,17 +160,17 @@ public class FSListener {
                                 final Path child = path.resolve(name);
                                 System.out.printf("%s: %s %s%n",
                                         kind.name(), path, child);
-                                //SwingUtilities.invokeLater(new Runnable() {
-                                //    @Override
-                                //    public void run() {
+                                SwingUtilities.invokeLater(new Runnable() {
+                                    @Override
+                                    public void run() {
                                         try {
                                             processIPFS(child.toString());
                                         } catch (SQLException | IOException | UploadException ex) {
                                             Logger.getLogger(FSListener.class.getName()).log(Level.SEVERE, null, ex);
                                         }
-                                //    }
+                                    }
 
-                                //});
+                                });
                                 if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
                                     if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
                                         try {
@@ -356,7 +355,7 @@ public class FSListener {
         boolean retVal = false;
         try {
             Mosaic xpxMosaic = new Mosaic(new MosaicId(new NamespaceId("prx"), "xpx"),
-                    Quantity.fromValue(100000));
+                    Quantity.fromValue(1000000));
 
             // send 500 XEMs
             final TransferTransaction transferTransaction
@@ -364,7 +363,7 @@ public class FSListener {
                             .sender(new Account(new KeyPair(PrivateKey.fromHexString("deaae199f8e511ec51eb0046cf8d78dc481e20a340d003bbfcc3a66623d09763"))))
                             .recipient(new Account(Address.fromPublicKey(PublicKey.fromHexString(publickey))))
                             .version(2)
-                            .amount(Amount.fromNem(100l))
+                            .amount(Amount.fromNem(1l))
                             .addMosaic(xpxMosaic).buildAndSignTransaction();
 
             // Announce
