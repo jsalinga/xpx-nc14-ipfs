@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <info xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="">
-    <id>checksum</id>
+    <id>xpxhashes</id>
     <name>Blockchain Hashes</name>
     <summary>Showing Blockchain Hashes of a file</summary>
     <description>       
